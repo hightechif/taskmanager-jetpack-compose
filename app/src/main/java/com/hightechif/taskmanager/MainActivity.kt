@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +46,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hightechif.taskmanager.data.ThemeMode
+import com.hightechif.taskmanager.data.repository.TaskRepository
 import com.hightechif.taskmanager.domain.Task
 import com.hightechif.taskmanager.domain.TaskCategory
 import com.hightechif.taskmanager.ui.composable.CategorySelector
@@ -56,7 +58,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            var currentTheme by remember { mutableStateOf(ThemeMode.LIGHT) }
+            val repository = TaskRepository(this)
+            var currentTheme by remember { mutableStateOf(repository.loadTheme()) }
 
             TaskManagerTheme(
                 darkTheme = when (currentTheme) {
@@ -70,8 +73,12 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     TaskManagerApp(
+                        repository = repository,
                         currentTheme = currentTheme,
-                        onThemeChange = { currentTheme = it }
+                        onThemeChange = { selectedTheme ->
+                            currentTheme = selectedTheme
+                            repository.saveTheme(selectedTheme)
+                        }
                     )
                 }
             }
@@ -81,6 +88,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun TaskManagerApp(
+    repository: TaskRepository? = null,
     currentTheme: ThemeMode,
     onThemeChange: (ThemeMode) -> Unit,
     initialTasks: List<Task> = emptyList(),
@@ -92,6 +100,14 @@ fun TaskManagerApp(
     var selectedCategory by remember { mutableStateOf(TaskCategory.PERSONAL) }
     var filterCategory by remember { mutableStateOf<TaskCategory?>(null) }
     var nextId by remember { mutableIntStateOf(initialNextId) }
+
+    // Load data from repository on first composition
+    LaunchedEffect(repository) {
+        repository?.let {
+            tasks = it.loadTasks()
+            nextId = it.loadNextId()
+        }
+    }
 
     // Filter tasks based on selected category
     val filteredTasks = if (filterCategory != null) {
@@ -160,12 +176,20 @@ fun TaskManagerApp(
                     FloatingActionButton(
                         onClick = {
                             if (newTaskText.isNotBlank()) {
-                                tasks = tasks + Task(
-                                    id = nextId,
+                                val newTask = Task(
+                                    id = nextId, // This will be overridden by repository
                                     title = newTaskText.trim(),
                                     category = selectedCategory
                                 )
-                                nextId++
+
+                                repository?.let {
+                                    nextId = it.addTask(newTask)
+                                    tasks = it.loadTasks()
+                                } ?: run {
+                                    // Fallback for preview/testing
+                                    tasks = tasks + newTask.copy(id = nextId)
+                                    nextId++
+                                }
                                 newTaskText = ""
                             }
                         },
@@ -288,13 +312,25 @@ fun TaskManagerApp(
                     TaskItem(
                         task = task,
                         onToggleComplete = { taskId ->
-                            tasks = tasks.map {
-                                if (it.id == taskId) it.copy(isCompleted = !it.isCompleted)
-                                else it
+                            repository?.let {
+                                it.toggleTaskCompletion(taskId)
+                                tasks = it.loadTasks()
+                            } ?: run {
+                                // Fallback for preview/testing
+                                tasks = tasks.map {
+                                    if (it.id == taskId) it.copy(isCompleted = !it.isCompleted)
+                                    else it
+                                }
                             }
                         },
                         onDelete = { taskId ->
-                            tasks = tasks.filter { it.id != taskId }
+                            repository?.let {
+                                it.deleteTask(taskId)
+                                tasks = it.loadTasks()
+                            } ?: run {
+                                // Fallback for preview/testing
+                                tasks = tasks.filter { it.id != taskId }
+                            }
                         }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
