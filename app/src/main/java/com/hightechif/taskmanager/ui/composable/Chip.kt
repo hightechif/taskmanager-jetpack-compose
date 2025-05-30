@@ -2,7 +2,6 @@ package com.hightechif.taskmanager.ui.composable
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -17,7 +16,7 @@ import com.hightechif.taskmanager.domain.TaskCategory
 import com.hightechif.taskmanager.ui.theme.TaskManagerTheme
 
 @Composable
-fun CategoryChip(
+fun Chip(
     category: TaskCategory,
     modifier: Modifier = Modifier
 ) {
@@ -41,15 +40,8 @@ fun CategoryChip(
 
 @Preview(showBackground = true)
 @Composable
-fun CategoryChipPreview() {
+fun ChipPreview() {
     TaskManagerTheme {
-        Row {
-            CategoryChip(category = TaskCategory.WORK)
-            CategoryChip(category = TaskCategory.PERSONAL)
-            CategoryChip(category = TaskCategory.SHOPPING)
-            CategoryChip(category = TaskCategory.HEALTH)
-            CategoryChip(category = TaskCategory.STUDY)
-            CategoryChip(category = TaskCategory.OTHER)
-        }
+        Chip(category = TaskCategory.WORK, modifier = Modifier.padding(8.dp))
     }
 }

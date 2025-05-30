@@ -1,5 +1,6 @@
 package com.hightechif.taskmanager.ui.composable
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -7,7 +8,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.DropdownMenu
@@ -15,7 +15,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,9 +22,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.hightechif.taskmanager.domain.TaskCategory
 import com.hightechif.taskmanager.ui.theme.TaskManagerTheme
 
@@ -33,9 +32,10 @@ import com.hightechif.taskmanager.ui.theme.TaskManagerTheme
 fun CategorySelector(
     selectedCategory: TaskCategory,
     onCategorySelected: (TaskCategory) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    initialExpanded: Boolean = false
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(initialExpanded) }
 
     Box(modifier = modifier) {
         OutlinedCard(
@@ -49,7 +49,7 @@ fun CategorySelector(
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                CategoryChip(category = selectedCategory)
+                Chip(category = selectedCategory)
 
                 Spacer(modifier = Modifier.weight(1f))
 
@@ -64,24 +64,23 @@ fun CategorySelector(
 
         DropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false }
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(Color.White)
         ) {
             TaskCategory.entries.forEach { category ->
                 DropdownMenuItem(
                     text = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            CategoryChip(category = category)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = category.displayName,
-                                fontSize = 14.sp
-                            )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Chip(category = category)
                         }
                     },
                     onClick = {
                         onCategorySelected(category)
                         expanded = false
-                    }
+                    },
+                    modifier = Modifier.background(Color.White),
                 )
             }
         }
@@ -96,6 +95,19 @@ fun CategorySelectorPreview() {
             selectedCategory = TaskCategory.WORK,
             onCategorySelected = {},
             modifier = Modifier.padding(16.dp)
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun CategorySelectorShownPreview() {
+    TaskManagerTheme {
+        CategorySelector(
+            selectedCategory = TaskCategory.WORK,
+            onCategorySelected = {},
+            modifier = Modifier.padding(16.dp),
+            initialExpanded = true
         )
     }
 }

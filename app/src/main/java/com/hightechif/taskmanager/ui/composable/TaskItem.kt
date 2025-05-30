@@ -79,7 +79,7 @@ fun TaskItem(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                CategoryChip(category = task.category)
+                Chip(category = task.category)
             }
 
             Spacer(modifier = Modifier.width(8.dp))

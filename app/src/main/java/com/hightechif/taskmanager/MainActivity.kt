@@ -3,6 +3,10 @@ package com.hightechif.taskmanager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,11 +25,14 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -100,6 +107,7 @@ fun TaskManagerApp(
     var selectedCategory by remember { mutableStateOf(TaskCategory.PERSONAL) }
     var filterCategory by remember { mutableStateOf<TaskCategory?>(null) }
     var nextId by remember { mutableIntStateOf(initialNextId) }
+    var isAddTaskSectionExpanded by remember { mutableStateOf(true) }
 
     // Load data from repository on first composition
     LaunchedEffect(repository) {
@@ -133,17 +141,48 @@ fun TaskManagerApp(
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 16.dp)
             )
 
             ThemeSelector(
                 currentTheme = currentTheme,
                 onThemeChange = onThemeChange,
-                modifier = Modifier.padding(bottom = 16.dp)
             )
         }
 
-        // Add new task section
+        // Header row with toggle button
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Add New Task",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            IconButton(
+                onClick = { isAddTaskSectionExpanded = !isAddTaskSectionExpanded },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = if (isAddTaskSectionExpanded)
+                        Icons.Default.KeyboardArrowUp
+                    else
+                        Icons.Default.KeyboardArrowDown,
+                    contentDescription = if (isAddTaskSectionExpanded)
+                        "Collapse add task section"
+                    else
+                        "Expand add task section",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+
+        // Collapsible Add new task section
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -153,59 +192,74 @@ fun TaskManagerApp(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .background(Color.White)
             ) {
-                // Task input row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                // Collapsible content
+                AnimatedVisibility(
+                    visible = isAddTaskSectionExpanded,
+                    enter = expandVertically(),
+                    exit = shrinkVertically()
                 ) {
-                    TextField(
-                        value = newTaskText,
-                        onValueChange = { newTaskText = it },
-                        placeholder = { Text("Enter a new task...") },
-                        modifier = Modifier.weight(1f),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent
-                        )
-                    )
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    FloatingActionButton(
-                        onClick = {
-                            if (newTaskText.isNotBlank()) {
-                                val newTask = Task(
-                                    id = nextId, // This will be overridden by repository
-                                    title = newTaskText.trim(),
-                                    category = selectedCategory
-                                )
-
-                                repository?.let {
-                                    nextId = it.addTask(newTask)
-                                    tasks = it.loadTasks()
-                                } ?: run {
-                                    // Fallback for preview/testing
-                                    tasks = tasks + newTask.copy(id = nextId)
-                                    nextId++
-                                }
-                                newTaskText = ""
-                            }
-                        },
-                        modifier = Modifier.size(48.dp)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp)
+                            .padding(top = 8.dp)
+                            .padding(bottom = 8.dp)
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "Add Task")
+                        // Task input row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            TextField(
+                                value = newTaskText,
+                                onValueChange = { newTaskText = it },
+                                placeholder = { Text("Enter a new task...") },
+                                modifier = Modifier.weight(1f),
+                                colors = TextFieldDefaults.colors(
+                                    focusedContainerColor = Color.Transparent,
+                                    unfocusedContainerColor = Color.Transparent
+                                )
+                            )
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            FloatingActionButton(
+                                onClick = {
+                                    if (newTaskText.isNotBlank()) {
+                                        val newTask = Task(
+                                            id = nextId, // This will be overridden by repository
+                                            title = newTaskText.trim(),
+                                            category = selectedCategory
+                                        )
+
+                                        repository?.let {
+                                            nextId = it.addTask(newTask)
+                                            tasks = it.loadTasks()
+                                        } ?: run {
+                                            // Fallback for preview/testing
+                                            tasks = tasks + newTask.copy(id = nextId)
+                                            nextId++
+                                        }
+                                        newTaskText = ""
+                                    }
+                                },
+                                modifier = Modifier.size(48.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = "Add Task")
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Category selector
+                        CategorySelector(
+                            selectedCategory = selectedCategory,
+                            onCategorySelected = { selectedCategory = it }
+                        )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Category selector
-                CategorySelector(
-                    selectedCategory = selectedCategory,
-                    onCategorySelected = { selectedCategory = it }
-                )
             }
         }
 
