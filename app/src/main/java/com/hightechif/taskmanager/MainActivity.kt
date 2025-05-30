@@ -3,7 +3,7 @@ package com.hightechif.taskmanager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,21 +41,33 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hightechif.taskmanager.data.ThemeMode
 import com.hightechif.taskmanager.domain.Task
 import com.hightechif.taskmanager.ui.composable.TaskItem
+import com.hightechif.taskmanager.ui.composable.ThemeSelector
 import com.hightechif.taskmanager.ui.theme.TaskManagerTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContent {
-            TaskManagerTheme {
+            var currentTheme by remember { mutableStateOf(ThemeMode.LIGHT) }
+
+            TaskManagerTheme(
+                darkTheme = when (currentTheme) {
+                    ThemeMode.LIGHT -> false
+                    ThemeMode.DARK -> true
+                    ThemeMode.SYSTEM -> isSystemInDarkTheme()
+                }
+            ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    TaskManagerApp()
+                    TaskManagerApp(
+                        currentTheme = currentTheme,
+                        onThemeChange = { currentTheme = it }
+                    )
                 }
             }
         }
@@ -63,7 +75,10 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun TaskManagerApp() {
+fun TaskManagerApp(
+    currentTheme: ThemeMode,
+    onThemeChange: (ThemeMode) -> Unit
+) {
     // State for the list of tasks
     var tasks by remember { mutableStateOf(listOf<Task>()) }
     var newTaskText by remember { mutableStateOf("") }
@@ -75,14 +90,27 @@ fun TaskManagerApp() {
             .statusBarsPadding()
             .padding(16.dp)
     ) {
-        // Header
-        Text(
-            text = "My Tasks",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
+        // Header with theme selector
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "My Tasks",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            ThemeSelector(
+                currentTheme = currentTheme,
+                onThemeChange = onThemeChange,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
+
 
         // Add new task section
         Card(
@@ -191,6 +219,9 @@ fun TaskManagerApp() {
 @Composable
 fun TaskManagerPreview() {
     TaskManagerTheme {
-        TaskManagerApp()
+        TaskManagerApp(
+            currentTheme = ThemeMode.SYSTEM,
+            onThemeChange = {}
+        )
     }
 }
