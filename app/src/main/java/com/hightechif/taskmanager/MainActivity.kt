@@ -11,16 +11,19 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -43,6 +46,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hightechif.taskmanager.data.ThemeMode
 import com.hightechif.taskmanager.domain.Task
+import com.hightechif.taskmanager.domain.TaskCategory
+import com.hightechif.taskmanager.ui.composable.CategorySelector
 import com.hightechif.taskmanager.ui.composable.TaskItem
 import com.hightechif.taskmanager.ui.composable.ThemeSelector
 import com.hightechif.taskmanager.ui.theme.TaskManagerTheme
@@ -77,12 +82,23 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun TaskManagerApp(
     currentTheme: ThemeMode,
-    onThemeChange: (ThemeMode) -> Unit
+    onThemeChange: (ThemeMode) -> Unit,
+    initialTasks: List<Task> = emptyList(),
+    initialNextId: Int = 1
 ) {
     // State for the list of tasks
-    var tasks by remember { mutableStateOf(listOf<Task>()) }
+    var tasks by remember { mutableStateOf(initialTasks) }
     var newTaskText by remember { mutableStateOf("") }
-    var nextId by remember { mutableIntStateOf(1) }
+    var selectedCategory by remember { mutableStateOf(TaskCategory.PERSONAL) }
+    var filterCategory by remember { mutableStateOf<TaskCategory?>(null) }
+    var nextId by remember { mutableIntStateOf(initialNextId) }
+
+    // Filter tasks based on selected category
+    val filteredTasks = if (filterCategory != null) {
+        tasks.filter { it.category == filterCategory }
+    } else {
+        tasks
+    }
 
     Column(
         modifier = Modifier
@@ -111,7 +127,6 @@ fun TaskManagerApp(
             )
         }
 
-
         // Add new task section
         Card(
             modifier = Modifier
@@ -119,46 +134,112 @@ fun TaskManagerApp(
                 .padding(bottom = 16.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(16.dp)
             ) {
-                TextField(
-                    value = newTaskText,
-                    onValueChange = { newTaskText = it },
-                    placeholder = { Text("Enter a new task...") },
-                    modifier = Modifier.weight(1f),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent
-                    )
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                FloatingActionButton(
-                    onClick = {
-                        if (newTaskText.isNotBlank()) {
-                            tasks = tasks + Task(
-                                id = nextId,
-                                title = newTaskText.trim()
-                            )
-                            nextId++
-                            newTaskText = ""
-                        }
-                    },
-                    modifier = Modifier.size(48.dp)
+                // Task input row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Task")
+                    TextField(
+                        value = newTaskText,
+                        onValueChange = { newTaskText = it },
+                        placeholder = { Text("Enter a new task...") },
+                        modifier = Modifier.weight(1f),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    FloatingActionButton(
+                        onClick = {
+                            if (newTaskText.isNotBlank()) {
+                                tasks = tasks + Task(
+                                    id = nextId,
+                                    title = newTaskText.trim(),
+                                    category = selectedCategory
+                                )
+                                nextId++
+                                newTaskText = ""
+                            }
+                        },
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Add Task")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Category selector
+                CategorySelector(
+                    selectedCategory = selectedCategory,
+                    onCategorySelected = { selectedCategory = it }
+                )
+            }
+        }
+
+        // Category filters
+        if (tasks.isNotEmpty()) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "Filter by Category",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // "All" filter chip
+                        item {
+                            FilterChip(
+                                onClick = { filterCategory = null },
+                                label = { Text("All") },
+                                selected = filterCategory == null
+                            )
+                        }
+
+                        // Category filter chips
+                        items(TaskCategory.entries) { category ->
+                            val categoryCount = tasks.count { it.category == category }
+                            if (categoryCount > 0) {
+                                FilterChip(
+                                    onClick = {
+                                        filterCategory =
+                                            if (filterCategory == category) null else category
+                                    },
+                                    label = { Text("${category.displayName} ($categoryCount)") },
+                                    selected = filterCategory == category
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
 
         // Task statistics
-        val completedCount = tasks.count { it.isCompleted }
-        val totalCount = tasks.size
+        val completedCount = filteredTasks.count { it.isCompleted }
+        val totalCount = filteredTasks.size
 
         if (totalCount > 0) {
             Card(
@@ -170,7 +251,11 @@ fun TaskManagerApp(
                 )
             ) {
                 Text(
-                    text = "Progress: $completedCount/$totalCount tasks completed",
+                    text = if (filterCategory != null) {
+                        "Progress (${filterCategory!!.displayName}): $completedCount/$totalCount tasks completed"
+                    } else {
+                        "Progress: $completedCount/$totalCount tasks completed"
+                    },
                     modifier = Modifier.padding(16.dp),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
@@ -179,14 +264,18 @@ fun TaskManagerApp(
         }
 
         // Tasks list
-        if (tasks.isEmpty()) {
+        if (filteredTasks.isEmpty()) {
             // Empty state
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "No tasks yet! Add one above to get started.",
+                    text = if (tasks.isEmpty()) {
+                        "No tasks yet! Add one above to get started."
+                    } else {
+                        "No tasks in this category."
+                    },
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -195,7 +284,7 @@ fun TaskManagerApp(
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(tasks) { task ->
+                items(filteredTasks) { task ->
                     TaskItem(
                         task = task,
                         onToggleComplete = { taskId ->
@@ -208,12 +297,12 @@ fun TaskManagerApp(
                             tasks = tasks.filter { it.id != taskId }
                         }
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
         }
     }
 }
-
 
 @Preview(showBackground = true)
 @Composable
@@ -221,7 +310,33 @@ fun TaskManagerPreview() {
     TaskManagerTheme {
         TaskManagerApp(
             currentTheme = ThemeMode.SYSTEM,
-            onThemeChange = {}
+            onThemeChange = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TaskManagerWithTwoDummyDataPreview() {
+    TaskManagerTheme {
+        TaskManagerApp(
+            currentTheme = ThemeMode.SYSTEM,
+            onThemeChange = {},
+            initialTasks = Task.getDummy().take(2),
+            initialNextId = 10
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TaskManagerWithDummyDataPreview() {
+    TaskManagerTheme {
+        TaskManagerApp(
+            currentTheme = ThemeMode.SYSTEM,
+            onThemeChange = {},
+            initialTasks = Task.getDummy(),
+            initialNextId = 12
         )
     }
 }

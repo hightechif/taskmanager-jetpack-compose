@@ -1,3 +1,4 @@
+
 package com.hightechif.taskmanager.ui.composable
 
 import androidx.compose.foundation.layout.Column
@@ -25,8 +26,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hightechif.taskmanager.domain.Task
+import com.hightechif.taskmanager.domain.TaskCategory
 import com.hightechif.taskmanager.ui.theme.TaskManagerTheme
-
 
 @Composable
 fun TaskItem(
@@ -59,20 +60,27 @@ fun TaskItem(
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Task title
-            Text(
-                text = task.title,
-                modifier = Modifier.weight(1f),
-                fontSize = 16.sp,
-                textDecoration = if (task.isCompleted)
-                    TextDecoration.LineThrough
-                else
-                    TextDecoration.None,
-                color = if (task.isCompleted)
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                else
-                    MaterialTheme.colorScheme.onSurface
-            )
+            // Task content (title and category)
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = task.title,
+                    fontSize = 16.sp,
+                    textDecoration = if (task.isCompleted)
+                        TextDecoration.LineThrough
+                    else
+                        TextDecoration.None,
+                    color = if (task.isCompleted)
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    else
+                        MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                CategoryChip(category = task.category)
+            }
 
             Spacer(modifier = Modifier.width(8.dp))
 
@@ -96,13 +104,19 @@ fun TaskItemPreview() {
     TaskManagerTheme {
         Column(modifier = Modifier.padding(16.dp)) {
             TaskItem(
-                task = Task(1, "Learn Jetpack Compose", true),
+                task = Task(1, "Learn Jetpack Compose", TaskCategory.STUDY, true),
                 onToggleComplete = {},
                 onDelete = {}
             )
             Spacer(modifier = Modifier.height(8.dp))
             TaskItem(
-                task = Task(2, "Build an awesome app", false),
+                task = Task(2, "Buy groceries", TaskCategory.SHOPPING, true),
+                onToggleComplete = {},
+                onDelete = {}
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            TaskItem(
+                task = Task(3, "Finish project report", TaskCategory.WORK, false),
                 onToggleComplete = {},
                 onDelete = {}
             )
