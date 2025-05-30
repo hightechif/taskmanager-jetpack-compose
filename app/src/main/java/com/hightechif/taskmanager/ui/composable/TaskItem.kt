@@ -96,13 +96,13 @@ fun TaskItemPreview() {
     TaskManagerTheme {
         Column(modifier = Modifier.padding(16.dp)) {
             TaskItem(
-                task = Task(1, "Learn Jetpack Compose", false),
+                task = Task(1, "Learn Jetpack Compose", true),
                 onToggleComplete = {},
                 onDelete = {}
             )
             Spacer(modifier = Modifier.height(8.dp))
             TaskItem(
-                task = Task(2, "Build an awesome app", true),
+                task = Task(2, "Build an awesome app", false),
                 onToggleComplete = {},
                 onDelete = {}
             )

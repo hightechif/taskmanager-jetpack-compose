@@ -107,7 +107,7 @@ fun ThemeSelectorPreview() {
 
 @Preview(showBackground = true)
 @Composable
-fun ThemeOptionItemSelectedPreview() {
+fun ThemeOptionItemPreview() {
     TaskManagerTheme {
         Column(modifier = Modifier.padding(16.dp)) {
             ThemeOptionItem(
