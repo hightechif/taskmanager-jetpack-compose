@@ -147,7 +147,7 @@ fun TaskManagerApp(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp),
+                .padding(bottom = 4.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Column(
@@ -211,51 +211,30 @@ fun TaskManagerApp(
 
         // Category filters
         if (tasks.isNotEmpty()) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Text(
-                        text = "Filter by Category",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 8.dp)
+                // "All" filter chip
+                item {
+                    FilterChip(
+                        onClick = { filterCategory = null },
+                        label = { Text("All") },
+                        selected = filterCategory == null
                     )
+                }
 
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        // "All" filter chip
-                        item {
-                            FilterChip(
-                                onClick = { filterCategory = null },
-                                label = { Text("All") },
-                                selected = filterCategory == null
-                            )
-                        }
-
-                        // Category filter chips
-                        items(TaskCategory.entries) { category ->
-                            val categoryCount = tasks.count { it.category == category }
-                            if (categoryCount > 0) {
-                                FilterChip(
-                                    onClick = {
-                                        filterCategory =
-                                            if (filterCategory == category) null else category
-                                    },
-                                    label = { Text("${category.displayName} ($categoryCount)") },
-                                    selected = filterCategory == category
-                                )
-                            }
-                        }
+                // Category filter chips
+                items(TaskCategory.entries) { category ->
+                    val categoryCount = tasks.count { it.category == category }
+                    if (categoryCount > 0) {
+                        FilterChip(
+                            onClick = {
+                                filterCategory =
+                                    if (filterCategory == category) null else category
+                            },
+                            label = { Text("${category.displayName} ($categoryCount)") },
+                            selected = filterCategory == category
+                        )
                     }
                 }
             }
